@@ -1,0 +1,23 @@
+plugins {
+    id 'java'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    implementation 'org.jsoup:jsoup:1.14.3'
+    implementation 'com.google.cloud:google-cloud-translate:2.3.0'
+    implementation 'com.google.apis:google-api-services-translate:v2-rev20210420-1.32.1'
+}
+
+test {
+    useJUnitPlatform()
+}
