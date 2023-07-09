@@ -5,11 +5,11 @@ import java.io.IOException;
 
 public class ApertiumTranslatorTest {
 
-    private WebCrawler.ApertiumTranslator apertiumTranslator;
+    private ApertiumTranslator apertiumTranslator;
 
     @BeforeEach
     public void setup() {
-        apertiumTranslator = new WebCrawler.ApertiumTranslator();
+        apertiumTranslator = new ApertiumTranslator();
     }
 
     @Test

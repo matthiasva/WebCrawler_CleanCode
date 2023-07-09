@@ -10,9 +10,9 @@ public class CrawlResultTest {
     public void testGetReport() {
         String testUrl = "https://example.com";
         String testTitle = "Example";
-        WebCrawler.CrawlResult testChildResult = new WebCrawler.CrawlResult("https://example.com/page1", "Child Page");
-        List<WebCrawler.CrawlResult> childResults = List.of(testChildResult);
-        WebCrawler.CrawlResult crawlResult = new WebCrawler.CrawlResult(testUrl, testTitle, childResults);
+        CrawlResult testChildResult = new CrawlResult("https://example.com/page1", "Child Page");
+        List<CrawlResult> childResults = List.of(testChildResult);
+        CrawlResult crawlResult = new CrawlResult(testUrl, testTitle, childResults);
         String expectedReport = "# " + testUrl + "\n" +
                 "- " + testTitle + "\n" +
                 "# " + testChildResult.getUrl() + "\n" +
@@ -27,9 +27,9 @@ public class CrawlResultTest {
     public void testGetters() {
         String url = "https://example.com";
         String title = "Example Domain";
-        List<WebCrawler.CrawlResult> childResults = new ArrayList<>();
+        List<CrawlResult> childResults = new ArrayList<>();
 
-        WebCrawler.CrawlResult crawlResult = new WebCrawler.CrawlResult(url, title, childResults);
+        CrawlResult crawlResult = new CrawlResult(url, title, childResults);
 
         Assertions.assertEquals(url, crawlResult.getUrl());
         Assertions.assertEquals(title, crawlResult.getTitle());
@@ -40,9 +40,9 @@ public class CrawlResultTest {
     public void testGetReport_NoChildResults() {
         String url = "https://example.com";
         String title = "Example Domain";
-        List<WebCrawler.CrawlResult> childResults = new ArrayList<>();
+        List<CrawlResult> childResults = new ArrayList<>();
 
-        WebCrawler.CrawlResult crawlResult = new WebCrawler.CrawlResult(url, title, childResults);
+        CrawlResult crawlResult = new CrawlResult(url, title, childResults);
         String report = crawlResult.getReport();
 
         Assertions.assertTrue(report.contains(url));
@@ -54,9 +54,9 @@ public class CrawlResultTest {
     public void testCrawlResult_GetReport_EmptyTitle() {
         String url = "http://example.com";
         String title = "";
-        List<WebCrawler.CrawlResult> childResults = new ArrayList<>();
+        List<CrawlResult> childResults = new ArrayList<>();
 
-        WebCrawler.CrawlResult crawlResult = new WebCrawler.CrawlResult(url, title, childResults);
+        CrawlResult crawlResult = new CrawlResult(url, title, childResults);
         String report = crawlResult.getReport();
 
         Assertions.assertTrue(report.contains(url));
@@ -68,14 +68,14 @@ public class CrawlResultTest {
     public void testCrawlResult_GetReport_WithChildResultsRecursive() {
         String url = "http://example.com";
         String title = "Example Domain";
-        List<WebCrawler.CrawlResult> childResults = new ArrayList<>();
-        List<WebCrawler.CrawlResult> grandchildResults = new ArrayList<>();
-        grandchildResults.add(new WebCrawler.CrawlResult("http://example.com/page3", "Page 3"));
-        grandchildResults.add(new WebCrawler.CrawlResult("http://example.com/page4", "Page 4"));
-        childResults.add(new WebCrawler.CrawlResult("http://example.com/page1", "Page 1", grandchildResults));
-        childResults.add(new WebCrawler.CrawlResult("http://example.com/page2", "Page 2"));
+        List<CrawlResult> childResults = new ArrayList<>();
+        List<CrawlResult> grandchildResults = new ArrayList<>();
+        grandchildResults.add(new CrawlResult("http://example.com/page3", "Page 3"));
+        grandchildResults.add(new CrawlResult("http://example.com/page4", "Page 4"));
+        childResults.add(new CrawlResult("http://example.com/page1", "Page 1", grandchildResults));
+        childResults.add(new CrawlResult("http://example.com/page2", "Page 2"));
 
-        WebCrawler.CrawlResult crawlResult = new WebCrawler.CrawlResult(url, title, childResults);
+        CrawlResult crawlResult = new CrawlResult(url, title, childResults);
         String report = crawlResult.getReport();
 
         Assertions.assertTrue(report.contains(url));

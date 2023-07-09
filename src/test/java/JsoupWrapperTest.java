@@ -7,11 +7,11 @@ import java.io.IOException;
 
 public class JsoupWrapperTest {
 
-    private WebCrawler.JsoupWrapper jsoupWrapper;
+    private JsoupWrapper jsoupWrapper;
 
     @BeforeEach
     public void setup() {
-        jsoupWrapper = new WebCrawler.JsoupWrapper();
+        jsoupWrapper = new JsoupWrapper();
     }
 
     @Test

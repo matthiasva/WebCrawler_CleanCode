@@ -43,7 +43,7 @@ public class WebCrawlerTest {
     @Test
     public void testProcessUrl_ValidUrl_Success() {
         String TEST_URL = "https://example.com";
-        WebCrawler.CrawlResult crawlResult = webCrawler.processUrl(TEST_URL);
+        CrawlResult crawlResult = webCrawler.processUrl(TEST_URL);
         Assertions.assertNotNull(crawlResult);
         assertEquals(TEST_URL, crawlResult.getUrl());
         Assertions.assertFalse(crawlResult.getTitle().isEmpty());
@@ -53,7 +53,7 @@ public class WebCrawlerTest {
     @Test
     public void testProcessUrl_InvalidUrl_ReturnsErrorResult() {
         String invalidUrl = "http://invalidurl";
-        WebCrawler.CrawlResult crawlResult = webCrawler.processUrl(invalidUrl);
+        CrawlResult crawlResult = webCrawler.processUrl(invalidUrl);
         Assertions.assertNotNull(crawlResult);
         assertEquals(invalidUrl, crawlResult.getUrl());
         assertEquals("invalidurl", crawlResult.getTitle());
@@ -115,9 +115,9 @@ public class WebCrawlerTest {
     public void testCrawlResult_GetReport_NoChildResults() {
         String url = "http://example.com";
         String title = "Example Domain";
-        List<WebCrawler.CrawlResult> childResults = new ArrayList<>();
+        List<CrawlResult> childResults = new ArrayList<>();
 
-        WebCrawler.CrawlResult crawlResult = new WebCrawler.CrawlResult(url, title, childResults);
+        CrawlResult crawlResult = new CrawlResult(url, title, childResults);
         String report = crawlResult.getReport();
 
         assertTrue(report.contains(url));
@@ -129,11 +129,11 @@ public class WebCrawlerTest {
     public void testCrawlResult_GetReport_WithChildResults() {
         String url = "http://example.com";
         String title = "Example Domain";
-        List<WebCrawler.CrawlResult> childResults = new ArrayList<>();
-        childResults.add(new WebCrawler.CrawlResult("http://example.com/page1", "Page 1"));
-        childResults.add(new WebCrawler.CrawlResult("http://example.com/page2", "Page 2"));
+        List<CrawlResult> childResults = new ArrayList<>();
+        childResults.add(new CrawlResult("http://example.com/page1", "Page 1"));
+        childResults.add(new CrawlResult("http://example.com/page2", "Page 2"));
 
-        WebCrawler.CrawlResult crawlResult = new WebCrawler.CrawlResult(url, title, childResults);
+        CrawlResult crawlResult = new CrawlResult(url, title, childResults);
         String report = crawlResult.getReport();
 
         assertTrue(report.contains(url));
@@ -157,7 +157,7 @@ public class WebCrawlerTest {
             executorService.execute(() -> {
                 try {
                     webCrawler.processUrl(url);
-                } catch (WebCrawler.CrawlException e) {
+                } catch (CrawlException e) {
                     webCrawler.writeError(e.getUrl(), e.getMessage());
                 }
             });
