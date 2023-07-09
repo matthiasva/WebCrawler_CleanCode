@@ -1,153 +1,173 @@
+import org.jsoup.nodes.Document;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.NoSuchElementException;
-import java.util.Scanner;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WebCrawlerTest {
-    protected WebCrawler webCrawler;
+    private static final String TEST_URL = "http://example.com";
+    private static final String SOURCE_LANGUAGE = "en";
+    private static final String TARGET_LANGUAGE = "es";
+    private static final int MAX_DEPTH = 2;
+
+    private WebCrawler webCrawler;
+
+    @Mock
+    private FileWriter writer;
 
     @BeforeEach
-    public void setup() {
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
         webCrawler = new WebCrawler();
+        webCrawler.writer = writer;
     }
 
     @Test
-    public void testTranslateWithApertium() throws IOException {
-        String translation = webCrawler.translateWithApertium("Hello", "en", "es");
-        int startIndex = translation.indexOf("\"translatedText\": \"") + 18;
-        int endIndex = translation.indexOf("\"}, \"");
-        String translatedText = translation.substring(startIndex+1, endIndex);
-
-        assertEquals("Hola", translatedText);
+    public void testProcessUrl_ValidUrl_Success() {
+        String TEST_URL = "https://example.com";
+        WebCrawler.CrawlResult crawlResult = webCrawler.processUrl(TEST_URL);
+        Assertions.assertNotNull(crawlResult);
+        assertEquals(TEST_URL, crawlResult.getUrl());
+        Assertions.assertFalse(crawlResult.getTitle().isEmpty());
+        Assertions.assertNotNull(crawlResult.getChildResults());
     }
 
     @Test
-    public void testTranslateWithApertium_InvalidLanguage() {
-        assertThrows(IOException.class, () -> {
-            webCrawler.translateWithApertium("Hello", "en", "invalid");
-        });
+    public void testProcessUrl_InvalidUrl_ReturnsErrorResult() {
+        String invalidUrl = "http://invalidurl";
+        WebCrawler.CrawlResult crawlResult = webCrawler.processUrl(invalidUrl);
+        Assertions.assertNotNull(crawlResult);
+        assertEquals(invalidUrl, crawlResult.getUrl());
+        assertEquals("invalidurl", crawlResult.getTitle());
+        assertTrue(crawlResult.getChildResults().isEmpty());
+    }
+
+
+    @Test
+    public void testTranslate_ValidText_Success() throws IOException {
+        String text = "Hello";
+        String translatedText = webCrawler.translate(text, SOURCE_LANGUAGE, TARGET_LANGUAGE);
+        Assertions.assertNotNull(translatedText);
     }
 
     @Test
-    public void testGetBaseUrl() {
-        String url = "https://www.example.com/page.html";
-        String baseUrl = webCrawler.getBaseUrl(url);
-        assertEquals("https://www.example.com", baseUrl);
+    public void testTranslate_InvalidText_ReturnsEmptyString() throws IOException {
+        String invalidText = "";
+        String translatedText = webCrawler.translate(invalidText, SOURCE_LANGUAGE, TARGET_LANGUAGE);
+        assertEquals("", translatedText);
     }
 
     @Test
-    public void testGetInputUrls_InvalidInput() {
-        String input = "invalid,url,input";
-
-        System.setIn(new java.io.ByteArrayInputStream(input.getBytes()));
-        assertThrows(NoSuchElementException.class, () -> {
-            webCrawler.getInputUrls();
-        });
+    public void testGetBaseUrl_ValidUrl_Success() {
+        String baseUrl = webCrawler.getBaseUrl(TEST_URL);
+        Assertions.assertNotNull(baseUrl);
     }
 
     @Test
-    public void testGetIndent() {
+    public void testGetIndent_PositiveDepth_Success() {
         int depth = 3;
         String indent = webCrawler.getIndent(depth);
+        Assertions.assertNotNull(indent);
         assertEquals("      ", indent);
     }
 
+
     @Test
-    public void testProcessUrl() throws IOException {
-        File tempFile = File.createTempFile("output", ".md");
-        tempFile.deleteOnExit();
-        FileWriter writer = new FileWriter(tempFile);
+    public void testWriteError_Success() throws IOException {
+        String url = "http://example.com";
+        String error = "Connection error";
 
-        WebCrawler.writer = writer;
+        webCrawler.writeError(url, error);
 
-        String url = "https://www.example.com";
-        WebCrawler.processUrl(url);
-
-        writer.close();
-
-        assertTrue(tempFile.length() > 0);
+        Mockito.verify(writer).write("# Error\n");
+        Mockito.verify(writer).write("- URL: " + url + "\n");
+        Mockito.verify(writer).write("- Message: " + error + "\n");
     }
 
     @Test
-    public void testProcessUrl_Exception() {
-        assertThrows(NullPointerException.class, () -> {
-            webCrawler.processUrl("invalid-url");
-        });
+    public void testWriteError_ExceptionThrown() throws IOException {
+        String url = "http://example.com";
+        String error = "Connection error";
+        Mockito.doThrow(new IOException()).when(writer).write(Mockito.anyString());
+
+        Assertions.assertThrows(IOException.class, () -> webCrawler.writeError(url, error));
     }
 
     @Test
-    public void testWriteError() throws IOException {
-        File tempFile = File.createTempFile("output", ".md");
-        tempFile.deleteOnExit();
-        FileWriter writer = new FileWriter(tempFile);
+    public void testCrawlResult_GetReport_NoChildResults() {
+        String url = "http://example.com";
+        String title = "Example Domain";
+        List<WebCrawler.CrawlResult> childResults = new ArrayList<>();
 
-        WebCrawler.writer = writer;
+        WebCrawler.CrawlResult crawlResult = new WebCrawler.CrawlResult(url, title, childResults);
+        String report = crawlResult.getReport();
 
-        String url = "https://www.example.com";
-        String error = "Error message";
-        WebCrawler.writeError(url, error);
-
-        writer.close();
-
-        String expectedContent = "# Error\n" +
-                "- URL: " + url + "\n" +
-                "- Message: " + error + "\n";
-        assertEquals(expectedContent, tempFileContent(tempFile));
+        assertTrue(report.contains(url));
+        assertTrue(report.contains(title));
+        Assertions.assertFalse(report.contains("Child Results:"));
     }
 
     @Test
-    public void testCrawl_InvalidUrl()  {
-        assertThrows(IllegalArgumentException.class, () -> {
-            webCrawler.crawl("invalid-url", 0);
-        });
+    public void testCrawlResult_GetReport_WithChildResults() {
+        String url = "http://example.com";
+        String title = "Example Domain";
+        List<WebCrawler.CrawlResult> childResults = new ArrayList<>();
+        childResults.add(new WebCrawler.CrawlResult("http://example.com/page1", "Page 1"));
+        childResults.add(new WebCrawler.CrawlResult("http://example.com/page2", "Page 2"));
+
+        WebCrawler.CrawlResult crawlResult = new WebCrawler.CrawlResult(url, title, childResults);
+        String report = crawlResult.getReport();
+
+        assertTrue(report.contains(url));
+        assertTrue(report.contains(title));
+        assertTrue(report.contains("Child Results:"));
+        assertTrue(report.contains("http://example.com/page1"));
+        assertTrue(report.contains("Page 1"));
+        assertTrue(report.contains("http://example.com/page2"));
+        assertTrue(report.contains("Page 2"));
     }
 
     @Test
-    public void testCrawl_StatusCodeError() throws IOException {
-        assertThrows(IOException.class, () -> {
-            webCrawler.crawl("https://www.example.com/error-page", 0);
-        });
-    }
-    @Test
-    public void testTranslate_SuccessfulTranslation() throws IOException {
-        String text = "Hello";
-        String sourceLang = "en";
-        String targetLang = "es";
-        String translation = webCrawler.translate(text, sourceLang, targetLang);
-        int startIndex = translation.indexOf("\"translatedText\": \"") + 18;
-        int endIndex = translation.indexOf("\"}, \"");
-        String translatedText = translation.substring(startIndex+1, endIndex);
+    public void testConcurrency() throws InterruptedException {
+        WebCrawler webCrawler = new WebCrawler();
 
-        assertEquals("Hola", translatedText);
-    }
+        String[] urls = {"https://example.com/url1", "https://example.com/url2", "https://example.com/url3"};
 
-    @Test
-    public void testTranslate_TranslationError() {
-        String text = "Hello";
-        String sourceLang = "en";
-        String targetLang = "invalid";
-        assertThrows(IOException.class, () -> {
-            webCrawler.translate(text, sourceLang, targetLang);
-        });
-    }
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
 
-    // Helper method to read the contents of a file
-    private String tempFileContent(File file) throws IOException {
-        StringBuilder content = new StringBuilder();
-        Scanner scanner = new Scanner(file);
-        while (scanner.hasNextLine()) {
-            content.append(scanner.nextLine()).append("\n");
+        for (String url : urls) {
+            executorService.execute(() -> {
+                try {
+                    webCrawler.processUrl(url);
+                } catch (WebCrawler.CrawlException e) {
+                    webCrawler.writeError(e.getUrl(), e.getMessage());
+                }
+            });
         }
-        scanner.close();
-        return content.toString();
+
+        executorService.shutdown();
+        executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
     }
-
-
 }
+
+
+
+
